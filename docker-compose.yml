@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  # Сервис Базы Данных (PostgreSQL)
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+
+  # Наше веб-приложение
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+    ports:
+      - "8000:8000"  # Слева: порт на Windows. Справа: порт внутри Docker.
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
+  static_volume:
+
+networks:
+  lab_net:
