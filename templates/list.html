@@ -2,13 +2,29 @@
 {% block title %}Список записей{% endblock %}
 
 {% block content %}
-<h3 class="mb-3">Записи из базы данных</h3>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>
+        {% if source == 'db' %}Записи из Базы Данных
+        {% elif source == 'json' %}Записи из JSON файла
+        {% else %}Записи из XML файла{% endif %}
+    </h3>
+    
+    <!-- Кнопки переключения источников -->
+    <div class="btn-group">
+        <a href="?source=db" class="btn btn-outline-primary {% if source == 'db' %}active{% endif %}">БД</a>
+        <a href="?source=json" class="btn btn-outline-primary {% if source == 'json' %}active{% endif %}">JSON</a>
+        <a href="?source=xml" class="btn btn-outline-primary {% if source == 'xml' %}active{% endif %}">XML</a>
+    </div>
+</div>
 
+<!-- Поиск показываем ТОЛЬКО для БД (по заданию) -->
+{% if source == 'db' %}
 <input
     type="text"
     id="search"
     class="form-control mb-3"
-    placeholder="Поиск по имени, email или описанию">
+    placeholder="Поиск по БД (имя, email или описание)...">
+{% endif %}
 
 <table class="table table-bordered table-striped">
     <thead class="table-dark">
@@ -16,15 +32,21 @@
             <th>Имя</th>
             <th>Email</th>
             <th>Описание</th>
+            <!-- Колонка действий только для БД -->
+            {% if source == 'db' %}
             <th style="width: 160px;">Действия</th>
+            {% endif %}
         </tr>
     </thead>
     <tbody id="results">
         {% for r in records %}
         <tr>
+            <!-- В БД поля доступны через точку, в словаре (JSON/XML) тоже (Django template language это умеет) -->
             <td>{{ r.name }}</td>
             <td>{{ r.email }}</td>
             <td>{{ r.description }}</td>
+            
+            {% if source == 'db' %}
             <td>
                 <a href="/edit/{{ r.id }}/" class="btn btn-sm btn-warning">Ред.</a>
                 <a href="/delete/{{ r.id }}/" class="btn btn-sm btn-danger"
@@ -32,30 +54,45 @@
                    Удал.
                 </a>
             </td>
+            {% endif %}
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="{% if source == 'db' %}4{% else %}3{% endif %}" class="text-center text-muted">
+                Записей нет
+            </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 
+<!-- Скрипт поиска тоже нужен только для БД -->
+{% if source == 'db' %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $('#search').on('keyup', function () {
-    $.get('/ajax-search/', { q: $(this).val() }, function (data) {
+    var query = $(this).val();
+    $.get('/ajax-search/', { q: query }, function (data) {
         $('#results').empty();
-
-        data.forEach(item => {
-            $('#results').append(`
-                <tr>
-                    <td>${item.name}</td>
-                    <td>${item.email}</td>
-                    <td>${item.description}</td>
-                    <td>
-                        <a href="/edit/${item.id}/" class="btn btn-sm btn-warning">Ред.</a>
-                        <a href="/delete/${item.id}/" class="btn btn-sm btn-danger">Удал.</a>
-                    </td>
-                </tr>
-            `);
-        });
+        if (data.length === 0) {
+            $('#results').append('<tr><td colspan="4" class="text-center text-muted">Ничего не найдено</td></tr>');
+        } else {
+            data.forEach(item => {
+                $('#results').append(`
+                    <tr>
+                        <td>${item.name}</td>
+                        <td>${item.email}</td>
+                        <td>${item.description}</td>
+                        <td>
+                            <a href="/edit/${item.id}/" class="btn btn-sm btn-warning">Ред.</a>
+                            <a href="/delete/${item.id}/" class="btn btn-sm btn-danger">Удал.</a>
+                        </td>
+                    </tr>
+                `);
+            });
+        }
     });
 });
 </script>
+{% endif %}
 {% endblock %}
