@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Список записей{% endblock %}
+
+{% block content %}
+<h3 class="mb-3">Записи из базы данных</h3>
+
+<input
+    type="text"
+    id="search"
+    class="form-control mb-3"
+    placeholder="Поиск по имени, email или описанию">
+
+<table class="table table-bordered table-striped">
+    <thead class="table-dark">
+        <tr>
+            <th>Имя</th>
+            <th>Email</th>
+            <th>Описание</th>
+            <th style="width: 160px;">Действия</th>
+        </tr>
+    </thead>
+    <tbody id="results">
+        {% for r in records %}
+        <tr>
+            <td>{{ r.name }}</td>
+            <td>{{ r.email }}</td>
+            <td>{{ r.description }}</td>
+            <td>
+                <a href="/edit/{{ r.id }}/" class="btn btn-sm btn-warning">Ред.</a>
+                <a href="/delete/{{ r.id }}/" class="btn btn-sm btn-danger"
+                   onclick="return confirm('Удалить запись?')">
+                   Удал.
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+$('#search').on('keyup', function () {
+    $.get('/ajax-search/', { q: $(this).val() }, function (data) {
+        $('#results').empty();
+
+        data.forEach(item => {
+            $('#results').append(`
+                <tr>
+                    <td>${item.name}</td>
+                    <td>${item.email}</td>
+                    <td>${item.description}</td>
+                    <td>
+                        <a href="/edit/${item.id}/" class="btn btn-sm btn-warning">Ред.</a>
+                        <a href="/delete/${item.id}/" class="btn btn-sm btn-danger">Удал.</a>
+                    </td>
+                </tr>
+            `);
+        });
+    });
+});
+</script>
+{% endblock %}
